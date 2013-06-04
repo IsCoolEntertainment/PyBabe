@@ -4,6 +4,7 @@ import csv
 from charset import UTF8Recoder, UTF8RecoderWithCleanup, PrefixReader, UnicodeCSVWriter
 import codecs
 import logging
+import os
 
 log = logging.getLogger("csv")
 
@@ -29,12 +30,14 @@ def build_value(x, null_value):
 
 def csvpull(stream,  dialect, kwargs):
     reader = csv.reader(stream, dialect)
+    filename = kwargs.get('filename', None)
     fields = kwargs.get('fields', None)
     null_value = kwargs.get('null_value', "")
     ignore_malformed = kwargs.get('ignore_bad_lines', False)
     if not fields:
         fields = reader.next()
-    metainfo = StreamHeader(**dict(kwargs, fields=fields))
+    source = os.path.splitext(os.path.basename(filename))[0] if filename else None
+    metainfo = StreamHeader(**dict(kwargs, fields=fields, source=source))
     yield metainfo
     for row in reader:
         try:
