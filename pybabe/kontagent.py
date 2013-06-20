@@ -83,7 +83,7 @@ kt_msg = StreamHeader(typename='ktg', fields=[
                 #   l = age
             'recipients',  # list of recipients uid, comma separated (ins,nes) VARCHAR(1023)
             'tracking_tag',  # unique tracking tag ( also match su : short tracking tag) VARCHAR(63)
-            'data',  # JSON Payload + additional query parameters not processed VARCHAR(255), 
+            'data',  # JSON Payload + additional query parameters not processed VARCHAR(255),
             'ip'
         ])
 
@@ -92,7 +92,7 @@ def process_file(base_date, f, discard_names):
     gic = get_gic()
     for line in f:
         v =  process_line(gic, base_date, line, discard_names)
-        if v: 
+        if v:
             yield v
 
 
@@ -137,13 +137,13 @@ def process_line(gic, base_date, line, discard_names):
                     pass
         data = params.get('data', None)
         if data:
-            try : 
+            try :
                 data_parameters = base64.b64decode(data)
                 data_object = json.loads(data_parameters)
                 if data_object.get('recipient', None):
                     recipients = data_object['recipient']
-            except : 
-                pass         
+            except :
+                pass
         if not name:
             name = msgtype
         if name in discard_names:
@@ -220,26 +220,32 @@ def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
     else:
         tmpfile = os.path.join(kt_file_cache, str(hash(url)) + '.tmp')
         command = ['wget', '--user', kt_user, '--password', kt_pass, '-q', '-O', tmpfile, url]
-        p = Popen(command, stdin=PIPE)
-        p.stdin.close()
-        p.wait()
-        if p.returncode != 0:
-            raise Exception('Unable to retrieve %s' % url)
-        if not os.path.exists(os.path.dirname(filepath)):
+        for attempts in range(3):
             try:
-                #ensure base directory exists.
-                os.makedirs(os.path.dirname(filepath))
-            except OSError, e:
-                if e.errno == 17:  # File Exists.
-                    pass
+                p = Popen(command, stdin=PIPE)
+                p.stdin.close()
+                p.wait()
+                if p.returncode != 0:
+                    raise Exception('Unable to retrieve %s' % url)
+                if not os.path.exists(os.path.dirname(filepath)):
+                    try:
+                        #ensure base directory exists.
+                        os.makedirs(os.path.dirname(filepath))
+                    except OSError, e:
+                        if e.errno == 17:  # File Exists.
+                            pass
+                        else:
+                            raise e
+                if os.stat(tmpfile).st_size > 0:
+                    os.rename(tmpfile, filepath)
+                    log.info('Kontagent: cache store: %s', filepath)
+                    return filepath
                 else:
-                    raise e
-        if os.stat(tmpfile).st_size > 0:
-            os.rename(tmpfile, filepath)
-            log.info('Kontagent: cache store: %s', filepath)
-            return filepath
-        else:
-            raise Exception('Failed to retrieve url %s' % url)
+                    raise Exception('Failed to retrieve url %s' % url)
+                break
+            except (Exception, OSError) as e:
+                print e
+
 
 
 def pull_kontagent(nostream, start_time, end_time, sample_mode=False, discard_names=None, **kwargs):
