@@ -58,6 +58,7 @@ def pull(format, stream, kwargs):
     else:
         pass
     delimiter = kwargs.get('delimiter', None)
+    quoting = kwargs.get('quoting', None)
     sniff_read = stream.next()
     stream = PrefixReader(sniff_read, stream, linefilter=kwargs.get("linefilter", None))
     dialect = csv.Sniffer().sniff(sniff_read)
@@ -72,6 +73,8 @@ def pull(format, stream, kwargs):
         return
     if delimiter:
         dialect.delimiter = delimiter
+    if quoting:
+        dialect.quoting = quoting
     for row in csvpull(stream,  dialect, kwargs):
         yield row
 
