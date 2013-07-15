@@ -60,7 +60,7 @@ class USD(object):
     def __get__(self, instance, owner):
         return self.value.quantize(Decimal(10) ** -6).normalize()
     def __set__(self, instance, value):
-        self.value = Decimal(value)
+        self.value = Decimal(str(value))
 
 class EUR(object):
     '''Descriptor for euros'''
@@ -68,7 +68,7 @@ class EUR(object):
     def __get__(self, instance, owner):
         return Decimal(instance.USD * get_rate_with_cache('USD', 'EUR')).quantize(Decimal(10) ** -6).normalize()
     def __set__(self, instance, value):
-        instance.USD = Decimal(value) * get_rate_with_cache('EUR', 'USD')
+        instance.USD = Decimal(str(value)) * get_rate_with_cache('EUR', 'USD')
 
 class CHF(object):
     '''Descriptor for franc suisse'''
@@ -76,7 +76,7 @@ class CHF(object):
     def __get__(self, instance, owner):
         return Decimal(instance.USD * get_rate_with_cache('USD', 'CHF')).quantize(Decimal(10) ** -6).normalize()
     def __set__(self, instance, value):
-        instance.USD = Decimal(value) * get_rate_with_cache('CHF', 'USD')
+        instance.USD = Decimal(str(value)) * get_rate_with_cache('CHF', 'USD')
 
 
 class Currency(object):
