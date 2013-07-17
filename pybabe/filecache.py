@@ -1,15 +1,16 @@
 
-import os
-import time
 from base import BabeBase
-from pybabe import Babe
+import os
+from os.path import join,getsize,getctime
+import time
+import csv
 
 
 class FileCache(object):
-    "Manage a file-based cache, with direction"
+    "Manage a file-based cache"
 
     def __init__(self, **kwargs):
-        self.size_limit = kwargs.get('size_limit',1<<30) #1<<20 (1MB), 1<<30 (1GB)
+        self.size_limit = kwargs.get('size_limit',5<<30) #1<<20 (1MB), 1<<30 (1GB)
         self.cache_directories = []
         cache = BabeBase.get_config("s3", "cache", default=False)
         if cache:
@@ -17,33 +18,41 @@ class FileCache(object):
             cache_dir = BabeBase.get_config("s3", "cache_dir", default=default_cache_dir)
             self.cache_directories.append(cache_dir)
             self.cache_directories.append("/tmp/pybabe-s3-cache-None")
-        self.cache_directories.append(Babe.get_config_with_env(section='kontagent', key='KT_FILECACHE', default='/tmp/kontagent-cache'))
+        self.cache_directories.append(BabeBase.get_config_with_env(section='kontagent', key='KT_FILECACHE', default='/tmp/kontagent-cache'))
 
-    def cleanup(self):
+    def cleanup(self, debug=False):
         "Apply a global cleanup to the cache, trimming it to size_limit by removing oldest files first"
-        if len(self.cache_directories):
-            for cache_dir in self.cache_directories:
-                if os.path.exists(cache_dir):
-                    global_size = 0
-                    files = []
-                    for (dir, dir_names, file_names) in os.walk(cache_dir):
-                        for f in file_names:
-                            file_stat = os.stat(cache_dir + '/' + f)
-                            file_size = int(file_stat.st_size)
-                            last_modified = int(file_stat.st_mtime)
-                            files.append({'filename':f, 'size':file_size, 'modified':last_modified})
-                            global_size += file_size
+        files = []
+        global_size = 0
+        for cache_dir in self.cache_directories:
+            if os.path.exists(cache_dir):
+                for (root, dir_names, file_names) in os.walk(cache_dir):
+                    for name in file_names:
+                        filepath = join(root, name)
+                        file_size = getsize(filepath)
+                        created_date = getctime(filepath)
+                        files.append({'filepath':filepath, 'size':file_size, 'created_date':created_date})
+                        global_size += file_size
 
-                    if global_size > self.size_limit and len(files):
-                        deleted_size = 0
-                        sortedlist = sorted(files , key=lambda elem: elem['modified'])
-                        for old_file in files:
-                            if global_size >= self.size_limit:
-                                os.remove(cache_dir + '/' + old_file['filename'])
-                                global_size -= old_file['size']
-
-
-
-if __name__ == '__main__':
-    a = FileCache()
-    a.cleanup()
+        if global_size > self.size_limit:
+            sortedlist = sorted(files , key=lambda elem: int(elem['created_date']))
+            with open('/tmp/filecache_cleanup.log', 'wb') as csvfile:
+                spamwriter = csv.writer(csvfile, delimiter=' ',
+                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                spamwriter.writerow(['global_size = ' + str(global_size)])
+                for junk_file in sortedlist:
+                    if global_size > self.size_limit:
+                        if not debug:
+                            # Remove junk file
+                            os.remove(junk_file['filepath'])
+                            # Try removing parent directories recursively if not empty
+                            try:
+                                dir_name = os.path.dirname(os.path.realpath(junk_file['filepath']))
+                                if not dir_name == '/tmp':
+                                    os.removedirs(dir_name)
+                            except OSError, e:
+                                pass
+                        global_size -= junk_file['size']
+                        spamwriter.writerow([junk_file['created_date'], junk_file['filepath']])
+                    else:
+                        break
