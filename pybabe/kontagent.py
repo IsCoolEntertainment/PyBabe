@@ -138,6 +138,7 @@ def process_line(gic, base_date, line, discard_names):
         data = params.get('data', None)
         if data:
             try :
+                data = data.replace('\r\n', '')
                 data_parameters = base64.b64decode(data)
                 data_object = json.loads(data_parameters)
                 if data_object.get('recipient', None):
