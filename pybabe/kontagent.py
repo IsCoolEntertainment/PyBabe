@@ -84,7 +84,10 @@ kt_msg = StreamHeader(typename='ktg', fields=[
             'recipients',  # list of recipients uid, comma separated (ins,nes) VARCHAR(1023)
             'tracking_tag',  # unique tracking tag ( also match su : short tracking tag) VARCHAR(63)
             'data',  # JSON Payload + additional query parameters not processed VARCHAR(255),
-            'ip'
+            'ip',
+            'mobile_os', # os = mobile operating system
+            'mobile_carrier', # c = mobile network
+            'mobile_device' # d = mobile brand
         ])
 
 
@@ -121,6 +124,9 @@ def process_line(gic, base_date, line, discard_names):
         level = params.get('l', None)
         recipients = params.get('r', None)
         ip = params.get('ip', source_ip)
+        mobile_os = params.get('os', None)
+        mobile_carrier = params.get('c', None)
+        mobile_device = params.get('d', None)
         if msgtype != "pgr":
             tracking_tag = params.get('u', None)
         else:
@@ -202,7 +208,8 @@ def process_line(gic, base_date, line, discard_names):
         return t(date, hour, time, name, uid,
             st1, st2, st3,
             channel_type, value, level,
-            recipients, tracking_tag, data, ip)
+            recipients, tracking_tag, data, ip,
+            mobile_os, mobile_carrier, mobile_device)
 
 log = logging.getLogger('kontagent')
 
