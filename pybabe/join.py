@@ -12,7 +12,7 @@ def join(stream, join_stream, key, join_key, add_fields=None, on_error=BabeBase.
             break
         else:
             k = getattr(row, join_key)
-            if not k in d:
+            if k is not None and not k in d:
                 d[k] = row
 
     for row in stream:
