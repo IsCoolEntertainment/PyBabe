@@ -2,6 +2,7 @@
 from base import BabeBase
 import os
 from os.path import join,getsize,getctime
+import datetime
 import time
 import csv
 
@@ -44,14 +45,17 @@ class FileCache(object):
                     if global_size > self.size_limit:
                         if not debug:
                             # Remove junk file
-                            os.remove(junk_file['filepath'])
-                            # Try removing parent directories recursively if not empty
-                            try:
-                                dir_name = os.path.dirname(os.path.realpath(junk_file['filepath']))
-                                if not dir_name == '/tmp':
-                                    os.removedirs(dir_name)
-                            except OSError, e:
-                                pass
+                            if os.path.exists(junk_file['filepath']):
+                                os.remove(junk_file['filepath'])
+                                # Try removing parent directories recursively if not empty
+                                try:
+                                    dir_name = os.path.dirname(os.path.realpath(junk_file['filepath']))
+                                    if not dir_name == '/tmp':
+                                        os.removedirs(dir_name)
+                                except OSError, e:
+                                    pass
+                            else:
+                                print '[{date}] DELETE - File {f} not found'.format(date=str(datetime.datetime.now()), f=junk_file['filepath'])
                         global_size -= junk_file['size']
                         spamwriter.writerow([junk_file['created_date'], junk_file['filepath']])
                     else:
