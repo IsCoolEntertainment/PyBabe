@@ -175,6 +175,10 @@ def process_line(gic, base_date, line, discard_names):
                     pass
             st3 = params.get('scheme', None)
         if msgtype == "apa" or msgtype == "pgr":
+            # "AdTruthID" param on "apa" msgs corresponds to "su" param (tracking_tag) on "ucc" msgs
+            # st3 field should be free in this case, so we store this param in it
+            if msgtype == "apa" and not st3:
+                st3 = params.get('AdTruthID', None)
             if "fb_appcenter" in params:
                 channel_type = 'fb_appcenter'
             else:
