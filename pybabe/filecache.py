@@ -18,7 +18,6 @@ class FileCache(object):
             default_cache_dir = "/tmp/pybabe-s3-cache-%s" % os.getenv('USER')
             cache_dir = BabeBase.get_config("s3", "cache_dir", default=default_cache_dir)
             self.cache_directories.append(cache_dir)
-            self.cache_directories.append("/tmp/pybabe-s3-cache-None")
         self.cache_directories.append(BabeBase.get_config_with_env(section='kontagent', key='KT_FILECACHE', default='/tmp/kontagent-cache'))
 
     def cleanup(self, debug=False):
