@@ -219,7 +219,7 @@ log = logging.getLogger('kontagent')
 
 
 def filenameify(url):
-    return url.replace('http://', '')
+    return url.replace('http://', '').replace('https://', '')
 
 
 def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
@@ -231,7 +231,7 @@ def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
         return filepath
     else:
         tmpfile = os.path.join(kt_file_cache, str(hash(url)) + '.tmp')
-        command = ['wget', '--user', kt_user, '--password', kt_pass, '-q', '-O', tmpfile, url]
+        command = ['wget', '--no-check-certificate', '--user', kt_user, '--password', kt_pass, '-q', '-O', tmpfile, url]
         for attempts in range(3):
             try:
                 p = Popen(command, stdin=PIPE)
