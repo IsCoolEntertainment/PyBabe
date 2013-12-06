@@ -149,6 +149,8 @@ def process_line(gic, base_date, line, discard_names):
                 data_object = json.loads(data_parameters)
                 if data_object.get('recipient', None):
                     recipients = data_object['recipient']
+                if data_object.has_key('playerId'):
+                    uid = data_object['playerId']
             except :
                 pass
         if not name:
