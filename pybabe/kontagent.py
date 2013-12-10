@@ -101,7 +101,7 @@ def process_file(base_date, f, discard_names):
 
 def process_line(gic, base_date, line, discard_names):
         t = kt_msg.t
-        line = line.rstrip('\n')
+        line = line.rstrip('\n').replace('%0A', '')
         line_segments = line.split(' ')
         if len(line_segments) != 5:
             return
