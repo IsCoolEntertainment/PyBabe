@@ -16,12 +16,12 @@ import base64
 
 
 def get_url(date, kt_user, kt_pass, kt_appid):
-    url = 'http://%s:%s@www.kontagent.com/data/raw_data/%s/%04u/%02u/%02u/%02u/?format=json' % (kt_user, kt_pass, kt_appid, date.year, date.month, date.day, date.hour)
+    url = 'http://%s:%s@query.kontagent.net/data/raw_data/%s/%04u/%02u/%02u/%02u/?format=json' % (kt_user, kt_pass, kt_appid, date.year, date.month, date.day, date.hour)
     return url
 
 
 def add_password_to_url(url, kt_user, kt_pass):
-    return url.replace('www.kontagent.com', '%s:%s@www.kontagent.com' % (kt_user, kt_pass))
+    return url.replace('query.kontagent.net', '%s:%s@query.kontagent.net' % (kt_user, kt_pass))
 
 
 def convert_to_datetime(d, referent_timezone):
