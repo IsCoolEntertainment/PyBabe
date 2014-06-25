@@ -8,8 +8,10 @@ def do_detect(s):
     if not http_detect:
         from httpagentparser import detect
         http_detect = detect
-    return http_detect(s)
-
+    try:
+        return http_detect(s)
+    except TypeError:
+	return {}
 
 def user_agent(stream, field, output_os=None, output_browser=None, output_browser_version=None):
     for row in stream:
