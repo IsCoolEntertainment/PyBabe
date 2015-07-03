@@ -193,6 +193,11 @@ def process_line(gic, base_date, line, discard_names):
             st1 = params.get('g', None)
             st2 = params.get('lc', None)
             st3 = params.get('ls', None)
+
+            # As we cannot distinguish mobile from canvas project, we try to get this parameters for every projects
+            st1 = params.get('v_maj', st1)
+            st2 = params.get('os', st2)
+            st3 = params.get('d', st3)
             birth_year = params.get('b', None)
             if birth_year and birth_year.isdigit():
                 level = base_date.year - int(birth_year)
