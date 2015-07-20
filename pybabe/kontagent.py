@@ -1,22 +1,25 @@
 
-from pybabe import Babe, StreamHeader, StreamFooter
 import datetime
-from timeparse import parse_date, parse_datetime
 import json
 import urllib
-from pytz import timezone, utc
 import cgi
-from multiprocessing.dummy import Pool
-from geoip import get_gic
 import logging
-from subprocess import Popen, PIPE
 import os
 import urlparse
 import base64
 
+from multiprocessing.dummy import Pool
+from timeparse import parse_date, parse_datetime
+from pytz import timezone, utc
+from geoip import get_gic
+from subprocess import Popen, PIPE
+
+from pybabe import Babe, StreamHeader, StreamFooter
+
 
 def get_url(date, kt_user, kt_pass, kt_appid):
-    url = 'http://%s:%s@query.kontagent.net/data/raw_data/%s/%04u/%02u/%02u/%02u/?format=json' % (kt_user, kt_pass, kt_appid, date.year, date.month, date.day, date.hour)
+    url = 'http://%s:%s@query.kontagent.net/data/raw_data/%s/%04u/%02u/%02u/%02u/?format=json'\
+          % (kt_user, kt_pass, kt_appid, date.year, date.month, date.day, date.hour)
     return url
 
 
@@ -34,14 +37,18 @@ def convert_to_datetime(d, referent_timezone):
         return d
     elif isinstance(d, datetime.date):
         # Convert to a datetime, taking 'referent_timezone in consideration'
-        # e.g. if 'CET' is the timezone, the day 2012-01-15 interpreted as '2012-01-15 00:00 CET' hence '2012-01-14 23:00 UTC'
+        # e.g. if 'CET' is the timezone, the day 2012-01-15 interpreted as '2012-01-15 00:00 CET'
+        # hence '2012-01-14 23:00 UTC'
         tz = timezone(referent_timezone)
         ldt = tz.localize(datetime.datetime(d.year, d.month, d.day, 0, 0, 0))
         return ldt.astimezone(utc)
 
 
 def enumerate_period_per_hour(start_time, end_time, referent_timezone):
-    "Provide an hour per hour enumeration of a period of time. Start time and entime can be datetime or date, as objects or strings"
+    """
+    Provide an hour per hour enumeration of a period of time. Start time and entime can be
+    datetime or date, as objects or strings
+    """
     start_time = convert_to_datetime(start_time, referent_timezone)
     end_time = convert_to_datetime(end_time, referent_timezone)
     time = start_time
@@ -51,176 +58,184 @@ def enumerate_period_per_hour(start_time, end_time, referent_timezone):
         yield time
         time = time + datetime.timedelta(hours=1)
 
-kt_msg = StreamHeader(typename='ktg', fields=[
-            'date', 'hour', 'time',
-            'name',
-            # event  name.  VARCHAR(63)
-                # Customer event or:
-                # ucc_new_install, ucc_old_install,
-                # or [event_type]
-                # or gc1, gc2, gc3, gc4
-            'uid',  # user id  that performs the action BIGINT
-                # also 'r' for  responses
-            'st1', 'st2', 'st3',
-                # event subtyping  VARCHAR(63)
-                # for pgr :
-                #   st1 = parsed referer
-                #   st2 = source_ip_country
-                #   st3 = http or https
-                # for cpu
-                #   st1 = gender
-                #   st2 = local country
-                #   st3 = local state (us state)
-            'channel_type',  # channel type or transaction type VARCHAR(63)
-                # for pgr : fxb_ref or fx_type
-            'value',  # value associated to event (or revenue)  INTEGER
-                 # for cpu :
-                 #  v = number of friends
-                 # for gc1, ...
-                 #  value for the goal
-            'level',  # user level associated to event          INTEGER
-                # for cpu
-                #   l = age
-            'recipients',  # list of recipients uid, comma separated (ins,nes) VARCHAR(1023)
-            'tracking_tag',  # unique tracking tag ( also match su : short tracking tag) VARCHAR(63)
-            'data',  # JSON Payload + additional query parameters not processed VARCHAR(255),
-            'ip',
-            'mobile_os', # os = mobile operating system
-            'mobile_carrier', # c = mobile network
-            'mobile_device' # d = mobile brand
-        ])
+kt_msg = StreamHeader(
+    typename='ktg', fields=[
+        'date', 'hour', 'time',
+        'name',
+        # event  name.  VARCHAR(63)
+        # Customer event or:
+        # ucc_new_install, ucc_old_install,
+        # or [event_type]
+        # or gc1, gc2, gc3, gc4
+        'uid',  # user id  that performs the action BIGINT
+        # also 'r' for  responses
+        'st1', 'st2', 'st3',
+        # event subtyping  VARCHAR(63)
+        # for pgr :
+        #   st1 = parsed referer
+        #   st2 = source_ip_country
+        #   st3 = http or https
+        # for cpu
+        #   st1 = gender
+        #   st2 = local country
+        #   st3 = local state (us state)
+        'channel_type',  # channel type or transaction type VARCHAR(63)
+        # for pgr : fxb_ref or fx_type
+        'value',  # value associated to event (or revenue)  INTEGER
+        # for cpu :
+        #  v = number of friends
+        # for gc1, ...
+        #  value for the goal
+        'level',  # user level associated to event          INTEGER
+        # for cpu
+        #   l = age
+        'recipients',  # list of recipients uid, comma separated (ins,nes) VARCHAR(1023)
+        'tracking_tag',  # unique tracking tag ( also match su : short tracking tag) VARCHAR(63)
+        'data',  # JSON Payload + additional query parameters not processed VARCHAR(255),
+        'ip',
+        'mobile_os',  # os = mobile operating system
+        'mobile_carrier',  # c = mobile network
+        'mobile_device'  # d = mobile brand
+    ])
 
 
 def process_file(base_date, f, discard_names):
     gic = get_gic()
     for line in f:
-        v =  process_line(gic, base_date, line, discard_names)
+        v = process_line(gic, base_date, line, discard_names)
         if v:
             yield v
 
 
 def process_line(gic, base_date, line, discard_names):
-        t = kt_msg.t
-        line = line.rstrip('\n').replace('%0A', '')
-        line_segments = line.split(' ')
-        if len(line_segments) != 5:
-            return
-        seconds, msgtype, params_string, source_ip, referer = line_segments
-        params = {}
-        for k, v in cgi.parse_qs(params_string).items():
-            params[k] = v[0]
-        minute = int(seconds) / 60
-        second = int(seconds) % 60
-        time = datetime.datetime(base_date.year, base_date.month, base_date.day, base_date.hour, minute, second)
-        date = datetime.date(time.year, time.month, time.day)
-        hour = time.hour
-        uid = params.get('s', None)
-        st1 = params.get('st1', None)
-        st2 = params.get('st2', None)
-        st3 = params.get('st3', None)
-        name = params.get('n', None)
-        channel_type = params.get('tu', None)
-        value = params.get('v', None)
-        level = params.get('l', None)
-        recipients = params.get('r', None)
-        ip = params.get('ip', source_ip)
-        mobile_os = params.get('os', None)
-        mobile_carrier = params.get('c', None)
-        mobile_device = params.get('d', None)
-        if msgtype != "pgr":
-            tracking_tag = params.get('u', None)
-        else:
-            tracking_tag = None
-            source_url = params.get('u', None)
-            if source_url:
-                try:
-                    o = urlparse.urlparse(source_url)
-                    if o.query:
-                        for k, v in cgi.parse_qs(o.query).items():
-                            params[k] = v[0]
-                except Exception, e:
-                    print e
-                    pass
-        data = params.get('data', None)
-        if data:
-            try :
-                data = data.replace('\r\n', '')
-                data_parameters = base64.b64decode(data)
-                data_object = json.loads(data_parameters)
-                if data_object.get('recipient', None):
-                    recipients = data_object['recipient']
-                if data_object.has_key('playerId'):
-                    uid = data_object['playerId']
-            except :
+    t = kt_msg.t
+    line = line.rstrip('\n').replace('%0A', '')
+    line_segments = line.split(' ')
+    if len(line_segments) != 5:
+        return
+    seconds, msgtype, params_string, source_ip, referer = line_segments
+    params = {}
+    for k, v in cgi.parse_qs(params_string).items():
+        params[k] = v[0]
+    minute = int(seconds) / 60
+    second = int(seconds) % 60
+    time = datetime.datetime(base_date.year,
+                             base_date.month, base_date.day, base_date.hour, minute, second)
+    date = datetime.date(time.year, time.month, time.day)
+    hour = time.hour
+    uid = params.get('s', None)
+    st1 = params.get('st1', None)
+    st2 = params.get('st2', None)
+    st3 = params.get('st3', None)
+    name = params.get('n', None)
+    channel_type = params.get('tu', None)
+    value = params.get('v', None)
+    level = params.get('l', None)
+    recipients = params.get('r', None)
+    ip = params.get('ip', source_ip)
+    mobile_os = params.get('os', None)
+    mobile_carrier = params.get('c', None)
+    mobile_device = params.get('d', None)
+    if msgtype != "pgr":
+        tracking_tag = params.get('u', None)
+    else:
+        tracking_tag = None
+        source_url = params.get('u', None)
+        if source_url:
+            try:
+                o = urlparse.urlparse(source_url)
+                if o.query:
+                    for k, v in cgi.parse_qs(o.query).items():
+                        params[k] = v[0]
+            except Exception, e:
+                print e
                 pass
-        if not name:
-            name = msgtype
-        if name in discard_names:
-            return
-        if msgtype == "pgr":
-            referer = referer.replace('\"', '')
-            if referer == '-':
-                referer = None
-            if referer:
-                srefs = referer.split('/')
-                if len(srefs) >= 3:
-                    if srefs[2] == "mailing-gift" and len(srefs) > 3:
-                        st1 = srefs[2] + '/' + srefs[3]
-                    else:
-                        st1 = srefs[2]
-            if source_ip:
-                try:
-                    st2 = gic.country_code_by_addr(ip)
-                    if st2:
-                        st2 = st2.upper()
-                except:
-                    pass
-            st3 = params.get('scheme', None)
-        if msgtype == "apa" or msgtype == "pgr":
-            # "AdTruthID" param on "apa" msgs corresponds to "su" param (tracking_tag) on "ucc" msgs
-            # st3 field should be free in this case, so we store this param in it
-            if msgtype == "apa" and not st3:
-                st3 = params.get('AdTruthID', None)
-            if "fb_appcenter" in params:
-                channel_type = 'fb_appcenter'
-            else:
-                for k in ["fbx_type", "fb_source", "fbx_ref", "ref", ]:
-                    if not channel_type:
-                        channel_type = params.get(k, None)
-                    else:
-                        break
-        elif msgtype == 'cpu':
-            st1 = params.get('g', None)
-            st2 = params.get('lc', None)
-            st3 = params.get('ls', None)
-
-            # As we cannot distinguish mobile from canvas project, we try to get this parameters for every projects
-            st1 = params.get('v_maj', st1)
-            st2 = params.get('os', st2)
-            st3 = params.get('d', st3)
-            birth_year = params.get('b', None)
-            if birth_year and birth_year.isdigit():
-                level = base_date.year - int(birth_year)
-            value = params.get('f', None)
-        elif msgtype == 'gci':
-            for g in ['gc1', 'gc2', 'gc3', 'gc4']:
-                if g in params:
-                    name = g
-                    value = int(params[g])
+    data = params.get('data', None)
+    if data:
+        try:
+            data = data.replace('\r\n', '')
+            data_parameters = base64.b64decode(data)
+            data_object = json.loads(data_parameters)
+            if data_object.get('recipient', None):
+                recipients = data_object['recipient']
+            if 'playerId' in data_object:
+                uid = data_object['playerId']
+        except:
+            pass
+    if not name:
+        name = msgtype
+    if name in discard_names:
+        return
+    if msgtype == "pgr":
+        referer = referer.replace('\"', '')
+        if referer == '-':
+            referer = None
+        if referer:
+            srefs = referer.split('/')
+            if len(srefs) >= 3:
+                if srefs[2] == "mailing-gift" and len(srefs) > 3:
+                    st1 = srefs[2] + '/' + srefs[3]
+                else:
+                    st1 = srefs[2]
+        if source_ip:
+            try:
+                st2 = gic.country_code_by_addr(ip)
+                if st2:
+                    st2 = st2.upper()
+            except:
+                pass
+        st3 = params.get('scheme', None)
+    if msgtype == "apa" or msgtype == "pgr":
+        # "AdTruthID" param on "apa" msgs corresponds to "su" param (tracking_tag) on "ucc" msgs
+        # st3 field should be free in this case, so we store this param in it
+        if msgtype == "apa" and not st3:
+            st3 = params.get('AdTruthID', None)
+        if "fb_appcenter" in params:
+            channel_type = 'fb_appcenter'
+        else:
+            for k in ["fbx_type", "fb_source", "fbx_ref", "ref", ]:
+                if not channel_type:
+                    channel_type = params.get(k, None)
+                else:
                     break
-        elif msgtype == 'ucc':
-            if 'i' in params:
-                name = "ucc_old_install" if params['i'] == '1' else "ucc_new_install"
-        elif msgtype == 'psr':
-            uid = params.get('r', None)
-            recipients = None
-        if 'su' in params:
+    elif msgtype == 'cpu':
+        st1 = params.get('g', None)
+        st2 = params.get('lc', None)
+        st3 = params.get('ls', None)
+
+        # As we cannot distinguish mobile from canvas project,
+        # we try to get this parameters for every projects
+        st1 = params.get('v_maj', st1)
+        st2 = params.get('os', st2)
+        st3 = params.get('d', st3)
+        birth_year = params.get('b', None)
+        if birth_year and birth_year.isdigit():
+            level = base_date.year - int(birth_year)
+        value = params.get('f', None)
+    elif msgtype == 'gci':
+        for g in ['gc1', 'gc2', 'gc3', 'gc4']:
+            if g in params:
+                name = g
+                value = int(params[g])
+                break
+    elif msgtype == 'ucc':
+        if 'i' in params:
+            name = "ucc_old_install" if params['i'] == '1' else "ucc_new_install"
+    elif msgtype == 'psr':
+        uid = params.get('r', None)
+        recipients = None
+    if 'su' in params:
+        # by rule of thumb. We're keeping the tracking tag with "-" char inside...
+        tags = [tag for tag in params['su'].split(',') if '-' in tag]
+        if len(tags) == 1:
+            tracking_tag = tags[0]
+        else:
             tracking_tag = params['su']
-        return t(date, hour, time, name, uid,
-            st1, st2, st3,
-            channel_type, value, level,
-            recipients, tracking_tag, data, ip,
-            mobile_os, mobile_carrier, mobile_device)
+    return t(date, hour, time, name, uid,
+             st1, st2, st3,
+             channel_type, value, level,
+             recipients, tracking_tag, data, ip,
+             mobile_os, mobile_carrier, mobile_device)
 
 log = logging.getLogger('kontagent')
 
@@ -230,7 +245,9 @@ def filenameify(url):
 
 
 def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
-    "Read a kontagent file possibly from a cache (store in dir KT_FILECACHE)"
+    """
+    Read a kontagent file possibly from a cache (store in dir KT_FILECACHE)
+    """
     f = filenameify(url)
     filepath = os.path.join(kt_file_cache, f)
     if os.path.exists(filepath):
@@ -238,7 +255,8 @@ def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
         return filepath
     else:
         tmpfile = os.path.join(kt_file_cache, str(hash(url)) + '.tmp')
-        command = ['wget', '--no-check-certificate', '--user', kt_user, '--password', kt_pass, '-q', '-O', tmpfile, url]
+        command = ['wget', '--no-check-certificate', '--user', kt_user, '--password', kt_pass,
+                   '-q', '-O', tmpfile, url]
         for attempts in range(3):
             try:
                 p = Popen(command, stdin=PIPE)
@@ -248,7 +266,7 @@ def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
                     raise Exception('Unable to retrieve %s' % url)
                 if not os.path.exists(os.path.dirname(filepath)):
                     try:
-                        #ensure base directory exists.
+                        # ensure base directory exists.
                         os.makedirs(os.path.dirname(filepath))
                     except OSError, e:
                         if e.errno == 17:  # File Exists.
@@ -266,8 +284,9 @@ def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
                 print e
 
 
-
-def pull_kontagent(nostream, start_time, end_time, sample_mode=False, discard_names=None, **kwargs):
+def pull_kontagent(nostream, start_time, end_time,
+                   sample_mode=False, discard_names=None,
+                   **kwargs):
     """
     Generate streams from kontagent logs.
     Generates a stream per hour and per message type. The streams are outputed per hour.
@@ -305,9 +324,12 @@ def pull_kontagent(nostream, start_time, end_time, sample_mode=False, discard_na
             # Sample mode: just process the first file.
             file_urls = file_urls[:1]
         p = Pool(8)
-        downloaded_files = p.map(lambda url: read_url_with_cache(url, kt_user, kt_pass, kt_filecache), file_urls)
+        downloaded_files = p.map(lambda url: read_url_with_cache(
+            url, kt_user, kt_pass, kt_filecache), file_urls)
         p.close()
-        header = kt_msg.replace(partition=[("date", datetime.date(hour.year, hour.month, hour.day)), ("hour", hour.hour)])
+        header = kt_msg.replace(partition=[
+            ("date", datetime.date(hour.year, hour.month, hour.day)),
+            ("hour", hour.hour)])
         yield header
         gzips = [Popen(['gzip', '-d', '-c', f], stdin=PIPE, stdout=PIPE) for f in downloaded_files]
         for gzip in gzips:

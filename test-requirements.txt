@@ -1,2 +1,3 @@
 stubserver==0.2
 unittest2==0.5.1
+pytest==2.7.2
