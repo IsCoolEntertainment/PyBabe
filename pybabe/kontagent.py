@@ -178,6 +178,7 @@ def process_line(gic, base_date, line, discard_names):
                 else:
                     st1 = srefs[2]
         if source_ip:
+            st1 = ip
             try:
                 st2 = gic.country_code_by_addr(ip)
                 if st2:
