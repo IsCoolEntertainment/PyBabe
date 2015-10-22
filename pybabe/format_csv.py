@@ -86,7 +86,7 @@ class default_dialect(csv.Dialect):
     quotechar = '"'
 
 
-def push(format, metainfo, instream, outfile, encoding, delimiter=None, **kwargs):
+def push(format, metainfo, instream, outfile, encoding, delimiter=',', **kwargs):
     if not encoding:
         encoding = "utf8"
     dialect = kwargs.get('dialect', default_dialect)

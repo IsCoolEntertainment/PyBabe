@@ -1,6 +1,7 @@
+# coding: utf-8
 
 from pybabe import Babe
-from ..tests_utils import TestCase
+from .. import TestCase
 
 
 class TestPartition(TestCase):

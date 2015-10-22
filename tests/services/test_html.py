@@ -1,5 +1,6 @@
+# coding: utf-8
 
-from ..tests_utils import TestCase
+from .. import TestCase
 from pybabe import Babe
 
 

@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 Need a correct pybabe config file :
 ~/.pybabe.cfg
@@ -5,7 +6,7 @@ And the GOOGLE_APPLICATION_CREDENTIALS environment variable set
 
 """
 
-from tests_utils import TestCase, can_connect_to_the_net, skipUnless
+from .. import TestCase, can_connect_to_the_net, skipUnless
 import csv
 import string
 import base64
@@ -93,17 +94,7 @@ def uid_type_check(row):
         return False
 
 
-class TestBigQuery(TestCase):
-
-    @skipUnless(can_connect_to_the_net(), 'Requires net connection')
-    def test_gs(self):
-        s = "a,b\n1,2\n3,4\n"
-        a = Babe().pull(string=s, format='csv', name='Test')
-        a.push(filename='test_gs.csv', bucket='bertrandtest', protocol="gs")
-        b = Babe().pull(filename='test_gs.csv',
-                        name='Test', bucket='bertrandtest', protocol="gs")
-        b.push(filename='tests/test_gs.csv', delimiter='\t')
-        self.assertEquals(b.to_string(), s)
+class TestKontagentToBigQuery(TestCase):
 
     @skipUnless(can_connect_to_the_net(), 'Requires net connection')
     def test_gs_load_from_kontagent(self):

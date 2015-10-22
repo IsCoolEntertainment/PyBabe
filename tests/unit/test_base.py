@@ -1,6 +1,7 @@
+# coding: utf-8
 
 from pybabe import Babe, StreamHeader
-from ..tests_utils import TestCase
+from .. import TestCase
 from cStringIO import StringIO
 from tempfile import NamedTemporaryFile
 import os
@@ -15,13 +16,13 @@ class TestBasicFunction(TestCase):
         babe = Babe()
         a = babe.pull(command=['/bin/ls', '-1', '.'],
                       source='ls', fields=['filename'], format="csv", encoding='utf8')
-        a.push(filename='tests/ls.csv')
+        a.push(filename='tests/files/ls.csv')
 
     def test_log(self):
         buf = StringIO()
         buf2 = StringIO()
         babe = Babe()
-        a = babe.pull(filename='tests/test.csv', source='Test')
+        a = babe.pull(filename='tests/files/test.csv', source='Test')
         a = a.log(logfile=buf)
         a.push(stream=buf2, format='csv')
         s = """foo,bar,f,d

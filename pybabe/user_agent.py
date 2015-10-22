@@ -28,9 +28,9 @@ def user_agent(stream, field, output_os=None, output_browser=None, output_browse
             o = do_detect(useragent)
             d = []
             if output_os:
-                # append(o['os']['name']
-                #        if 'os' in o
-                #        else o['dist']['name'] if 'dist' in o else None)
+                d.append(o['os']['name']
+                         if 'os' in o
+                         else o['dist']['name'] if 'dist' in o else None)
                 pass
             if output_browser:
                 d.append(o['browser']['name'] if 'browser' in o else None)

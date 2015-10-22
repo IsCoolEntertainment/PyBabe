@@ -248,7 +248,7 @@ def filterColumns(stream, typename=None, remove_fields=None, keep_fields=None):
                 fields = keep_fields
             else:
                 fields = [name for name in row.normalized_fields
-                if not name in remove_fields]
+                          if name not in remove_fields]
             metainfo = row.replace(typename=typename, fields=fields)
             yield metainfo
         elif isinstance(row, StreamMeta):
@@ -282,7 +282,7 @@ def filter_out_null_values(stream, fields):
         else:
             keep = True
             for f in fields:
-                if getattr(row, f) == None:
+                if getattr(row, f) is None:
                     keep = False
                     break
             if keep:
@@ -318,10 +318,11 @@ BabeBase.register("filter_by_regexp", filter_by_regexp)
 def rename(stream, **kwargs):
     for row in stream:
         if isinstance(row, StreamHeader):
-
-            metainfo = row.replace(typename=None,
-                partition=[(kwargs.get(name, name), row.partition[name]) for name in row.partition],
-            fields=[kwargs.get(name, name) for name in row.fields])
+            metainfo = row.replace(
+                typename=None,
+                partition=[(kwargs.get(name, name), row.partition[name])
+                           for name in row.partition] if row.partition is not None else None,
+                fields=[kwargs.get(name, name) for name in row.fields])
             yield metainfo
         elif isinstance(row, StreamMeta):
             yield row
@@ -343,7 +344,7 @@ class Window(object):
 
 
 def windowMap(stream, window_size, function,
-    insert_fields=None, fields=None, typename=None):
+              insert_fields=None, fields=None, typename=None):
     """
 Similar to mapTo.
 For each row, function(rows) is called with the last 'window_size' rows
@@ -429,9 +430,9 @@ def transpose(stream, typename=None):
             t_rows = [[name] for name in metainfo.fields]
         elif isinstance(row, StreamFooter):
             t_metainfo = StreamHeader(source=metainfo.source,
-                typename=typename,
-                fields=t_names,
-                primary_key=t_primary_key)
+                                      typename=typename,
+                                      fields=t_names,
+                                      primary_key=t_primary_key)
             yield t_metainfo
             for t_row in t_rows:
                 if t_row[0] == metainfo.primary_key:  # Skip primary key
