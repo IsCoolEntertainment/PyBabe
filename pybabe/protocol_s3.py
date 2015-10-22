@@ -34,7 +34,7 @@ def check_exists(filename_remote, ** kwargs):
 def get_keys(bucket, filename, fail_on_empty):
     if filename.find('?') >= 0 or filename.find('*') >= 0:
         comp = filename.rsplit('/', 1)
-        p  = comp[0] + '/' if len(comp) > 1 else ''
+        p = comp[0] + '/' if len(comp) > 1 else ''
         pattern = comp[1] if len(comp) > 1 else comp[0]
         keys = [k for k in bucket.list(p) if fnmatch.fnmatch(k.name[len(p):], pattern)]
         if fail_on_empty and len(keys) == 0:
@@ -49,11 +49,13 @@ def get_keys(bucket, filename, fail_on_empty):
         else:
             return []
 
+
 class ReadLineWrapper(object):
     "Overrride next to enumerate 'lines' instead of bytes "
     def __init__(self, obj):
         self.obj = obj
         self.it = self.doiter()
+
     def __iter__(self):
         return self.it
 
@@ -84,7 +86,8 @@ class ReadLineWrapper(object):
 
 
 def progress_call_back(done, todo):
-    print "Done %u out of %u (%f%%)" % (done, todo, (done*100)/todo)
+    print "Done %u out of %u (%f%%)" % (done, todo, (done * 100) / todo)
+
 
 def pull(filename_remote, **kwargs):
     bucket = get_bucket(kwargs)
@@ -100,7 +103,8 @@ def pull(filename_remote, **kwargs):
     for key in keys:
         logging.info("S3 Load: %s", key)
         if cache:
-            f = os.path.join(cache_dir, os.path.basename(key.name) + "-" + key.etag.replace('"', ''))
+            f = os.path.join(cache_dir,
+                             os.path.basename(key.name) + "-" + key.etag.replace('"', ''))
             if os.path.exists(f):
                 files.append(open(f, "r"))
             else:

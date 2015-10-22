@@ -1,0 +1,14 @@
+filename
+2.6-requirements.txt
+data
+env
+examples
+optional-requirements.txt
+pivot_tests.py
+pivot_tests.pyc
+pybabe
+setup.py
+test.csv.gz
+test-requirements.txt
+tests
+test.sqlite

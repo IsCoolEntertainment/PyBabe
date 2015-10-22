@@ -4,7 +4,6 @@ import csv
 from charset import UTF8Recoder, UTF8RecoderWithCleanup, PrefixReader, UnicodeCSVWriter
 import codecs
 import logging
-import os
 
 log = logging.getLogger("csv")
 
@@ -28,7 +27,7 @@ def build_value(x, null_value):
         return unicode(x, "utf-8")
 
 
-def csvpull(stream,  dialect, kwargs):
+def csvpull(stream, dialect, kwargs):
     reader = csv.reader(stream, dialect)
     source = kwargs.get('source', None)
     fields = kwargs.get('fields', None)
@@ -74,7 +73,7 @@ def pull(format, stream, kwargs):
         dialect.delimiter = delimiter
     if quoting:
         dialect.quoting = quoting
-    for row in csvpull(stream,  dialect, kwargs):
+    for row in csvpull(stream, dialect, kwargs):
         yield row
 
 

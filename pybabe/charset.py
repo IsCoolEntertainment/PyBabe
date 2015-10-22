@@ -6,7 +6,7 @@ import cStringIO
 import datetime
 
 
-## From samples in http://docs.python.org/library/csv.html
+# From samples in http://docs.python.org/library/csv.html
 class UTF8Recoder(object):
     """
     Iterator that reads an encoded stream and reencodes the input to UTF-8
@@ -61,7 +61,7 @@ def write_value(s):
     if isinstance(s, unicode):
         return s.encode('utf-8')
     elif isinstance(s, datetime.datetime):
-         # Remove timezone
+        # Remove timezone
         return s.strftime('%Y-%m-%d %H:%M:%S')
     else:
         return s

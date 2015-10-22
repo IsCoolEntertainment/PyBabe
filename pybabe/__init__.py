@@ -8,7 +8,7 @@ import minmax
 import partition
 
 # Just reference these reflective module once
-#to avoid warnings from syntax checkers
+# to avoid warnings from syntax checkers
 only_to_load_1 = [transform, types, minmax, partition]
 Babe = BabeBase
 StreamHeader = StreamHeader

@@ -1,4 +1,4 @@
-
+# coding=utf-8
 
 import re
 import os
@@ -30,20 +30,28 @@ def my_import(name):
     return mod
 
 
-
 class StreamMeta(object):
     pass
 
+
 class StreamHeader(StreamMeta):
-    source = None    # Describe the origin for  the data
-    description = None # Describe the data 
-    typename = None  # Describe a datatype name for the row   
-    fields = None    # List of the fields 
-    partition = None # Dictionary describing the partition { field_name : field_value }
+    source = None       # Describe the origin for  the data
+    description = None  # Describe the data
+    typename = None     # Describe a datatype name for the row
+    fields = None       # List of the fields
+    partition = None    # Dictionary describing the partition { field_name : field_value }
     primary_key = None
     t = None
 
-    def __init__(self, fields, source=None, typename=None,  partition = None, primary_key = None, t = None, description=None, **kwargs):
+    def __init__(self,
+                 fields,
+                 source=None,
+                 typename=None,
+                 partition=None,
+                 primary_key=None,
+                 t=None,
+                 description=None,
+                 **kwargs):
         self.source = source
         self.typename = typename
         self.fields = fields
@@ -51,13 +59,13 @@ class StreamHeader(StreamMeta):
         self.partition = partition
         self.primary_key = primary_key
         self.description = description
-        if not self.typename and source: 
+        if not self.typename and source:
             self.typename = StreamHeader.keynormalize(source)
         if not self.typename:
             self.typename = '_'.join(self.normalized_fields)
         self.t = t if t else namedtuple(self.typename, self.normalized_fields)
 
-    ## Some state to be define for metainfo pickling. 
+    # Some state to be define for metainfo pickling.
 
     def as_dict(self):
         d = {}
@@ -69,34 +77,33 @@ class StreamHeader(StreamMeta):
     def from_dict(d):
         return StreamHeader(**d)
 
-
-
     @classmethod
     def keynormalize(cls, key):
         """Normalize a column name to a valid python identifier"""
-        s = '_'.join(re.findall(r'\w+',key))
+        s = '_'.join(re.findall(r'\w+', key))
         if s.startswith('_'):
             s = s[1:]
-        if s[0].isdigit(): 
+        if s[0].isdigit():
             s = 'd_' + s
         return s
 
     def insert(self, typename, fields):
         return StreamHeader(
-            typename=typename if typename else self.typename, 
-            source = self.source, 
-            partition=  self.partition,
-            fields = self.fields + ([fields] if isinstance(fields, basestring) else fields))
+            typename=typename if typename else self.typename,
+            source=self.source,
+            partition=self.partition,
+            fields=self.fields + ([fields] if isinstance(fields, basestring) else fields))
 
-    def replace(self, typename = None, fields = None, partition=partition):
+    def replace(self, typename=None, fields=None, partition=partition):
         return StreamHeader(typename=typename if typename else self.typename,
-            fields=fields if fields else self.fields, 
-            t = self.t if not fields or typename else None, 
-            partition=ordered_dict(partition) if partition else self.partition,
-            source = self.source)
+                            fields=fields if fields else self.fields,
+                            t=self.t if not fields or typename else None,
+                            partition=ordered_dict(partition) if partition else self.partition,
+                            source=self.source)
 
-    def get_stream_name(self): 
-        return '_'.join(filter(None, [self.source, '_'.join(map(str, self.partition.values() if self.partition else []))]))
+    def get_stream_name(self):
+        return '_'.join(filter(None, [self.source, '_'.join(map(str, self.partition.values()
+                                      if self.partition else []))]))
 
     def get_primary_identifier(self, row, linecount):
         """Retrieve a primary identifier associated with a row
@@ -105,12 +112,14 @@ class StreamHeader(StreamMeta):
         if self.primary_key:
             return getattr(row, self.primary_key)
         else:
-            return str(linecount)# TODO : add paritition? 
+            return str(linecount)  # TODO : add paritition?
 
-class StreamFooter(StreamMeta): 
-    pass 
+
+class StreamFooter(StreamMeta):
+    pass
 
 error_log = logging.getLogger("babe_errors")
+
 
 class BabeBase(object):
 
@@ -135,7 +144,7 @@ class BabeBase(object):
     ON_ERROR_NONE = "NONE"
 
     @classmethod
-    def log_warn(cls, function, row,e): 
+    def log_warn(cls, function, row, e):
         error_log.warn("In %s %s: %s" % (function, str(e), row))
 
     @classmethod
@@ -143,32 +152,35 @@ class BabeBase(object):
         if cls.config:
             return cls.config
         cls.config = ConfigParser.ConfigParser()
-        cls.config.read([os.path.join(os.path.dirname(__file__),'pybabe.cfg'), os.path.expanduser('~/.pybabe.cfg')])
+        cls.config.read([os.path.join(os.path.dirname(__file__), 'pybabe.cfg'),
+                         os.path.expanduser('~/.pybabe.cfg')])
         return cls.config
 
     @classmethod
-    def get_config(cls, section, key, kwargs = {}, default=None):
+    def get_config(cls, section, key, kwargs={}, default=None):
         if key in kwargs:
             return kwargs[key]
         config = cls.get_config_object()
-        if config.has_option(section,key):
+        if config.has_option(section, key):
             return config.get(section, key)
         if default is not None:
             return default
-        raise Exception("Unable to locate key %s from section %s in args, config or env" % (key, section))
+        raise Exception(
+            "Unable to locate key %s from section %s in args, config or env" % (key, section))
 
-        
-    @classmethod    
-    def get_config_with_env(cls, section, key, kwargs={}, default=None): 
-        if key in kwargs: 
+    @classmethod
+    def get_config_with_env(cls, section, key, kwargs={}, default=None):
+        if key in kwargs:
             return kwargs[key]
-        if cls.has_config(section,key):
+        if cls.has_config(section, key):
             return cls.get_config(section, key)
         if os.getenv(key):
             return os.getenv(key)
-        if default is not None: 
+        if default is not None:
             return default
-        raise Exception("Unable to locate key %s from section %s in args, config or env" % (key, section))
+        raise Exception(
+            "Unable to locate key %s from section %s in args, config or env" % (key, section))
+
     @classmethod
     def has_config(cls, section, key):
         config = cls.get_config_object()
@@ -179,10 +191,10 @@ class BabeBase(object):
 
     def has_memoized(self):
         self.memoize_directory = self.d.get('memoize_directory', None)
-        if not self.memoize_directory: 
-            ## TODO: not portable 
+        if not self.memoize_directory:
+            # TODO: not portable
             self.memoize_directory = "/tmp/pybabe-memoize-%s" % os.getenv('USER')
-        if not os.path.exists(self.memoize_directory): 
+        if not os.path.exists(self.memoize_directory):
             os.mkdir(self.memoize_directory)
 
         s = cPickle.dumps((self.v, self.d))
@@ -193,13 +205,13 @@ class BabeBase(object):
         else:
             return False
 
-    def tee(self, n): 
+    def tee(self, n):
         "Return N Identical Babes out of one."
-        if n == 1: 
-            return self 
+        if n == 1:
+            return self
         else:
-            iterators = itertools.tee(self, n) 
-            return [self.get_iterator(iterator, lambda x : x, [], {}) for iterator in iterators]
+            iterators = itertools.tee(self, n)
+            return [self.get_iterator(iterator, lambda x: x, [], {}) for iterator in iterators]
 
     def iter_memoized(self):
         f = open(self.mempath)
@@ -208,16 +220,16 @@ class BabeBase(object):
             while True:
                 a = cPickle.load(f)
                 if isinstance(a, list):
-                    for v in a: 
+                    for v in a:
                         yield metainfo.t._make(v)
                 elif isinstance(a, StreamFooter):
-                    yield a 
+                    yield a
                 else:
                     metainfo = StreamHeader.from_dict(a)
                     yield metainfo
         except EOFError:
             f.close()
-            return  
+            return
 
     def mem_iter(self, i):
         tmppath = self.mempath + '.tmp'
@@ -243,30 +255,31 @@ class BabeBase(object):
 
     def __iter__(self):
         b = self.should_memoize()
-        if b and self.has_memoized(): 
-            print "Reusing memoized version of stream %s", self.mempath
+        if b and self.has_memoized():
+            logging.info("Reusing memoized version of stream %s", self.mempath)
             return self.iter_memoized()
-        if b: 
-            print "Storing memoized item in %s" % self.mempath
+        if b:
+            logging.info("Storing memoized item in %s" % self.mempath)
             return self.mem_iter(self.m(self.stream, *self.v, **self.d))
-        else: 
+        else:
             return self.m(self.stream, *self.v, **self.d)
 
     def get_iterator(self, stream, m, v, d):
         b = BabeBase()
         b.stream = stream
         b.m = m
-        b.v = v 
-        b.d = d 
+        b.v = v
+        b.d = d
         return b
 
     @classmethod
     def register(cls, name, m):
         """A register a flow method """
         # will return an iterator
-        f = lambda self, *args, **kwargs : self.get_iterator(self, m, args, kwargs)
+        f = lambda self, *args, **kwargs: self.get_iterator(self, m, args, kwargs)
         cls.operations[name] = f
-        setattr(cls, name, f) ### We have to bind the method as a direct attribute to bind it as a method 
+        # We have to bind the method as a direct attribute to bind it as a method
+        setattr(cls, name, f)
 
     @classmethod
     def registerFinalMethod(cls, name, m):
@@ -280,8 +293,7 @@ class BabeBase(object):
             return getattr(self, name)
         else:
             raise AttributeError("Unknown method %s" % name)
-        
-        
+
     @classmethod
     def addPullPlugin(cls, format, supportedExtensions, m, need_seek=False):
         """Add a new supported file extension for pull """
@@ -295,79 +307,80 @@ class BabeBase(object):
         cls.pushFormats[format] = m
         for s in supportedExtensions:
             cls.pushExtensions[s] = format
-            
+
     @classmethod
     def addCompressPushPlugin(cls, format, supportedExtensions, m):
         cls.pushCompressFormats[format] = m
         for s in supportedExtensions:
             cls.pushCompressExtensions[s] = format
-            
+
     @classmethod
-    def addCompressPullPlugin(cls, format, supportedExtensions, get_list, uncompress, need_seek=True):
+    def addCompressPullPlugin(cls, format, supportedExtensions, get_list, uncompress,
+                              need_seek=True):
         cls.pullCompressFormatsNeedSeek[format] = need_seek
         cls.pullCompressFormats[format] = (get_list, uncompress)
         for s in supportedExtensions:
             cls.pullCompressExtensions[s] = format
-            
+
     @classmethod
     def addProtocolPushPlugin(cls, protocol, m, early_check, check_exists=None):
-        cls.pushProtocols[protocol] = (early_check, m, check_exists)  
-        
+        cls.pushProtocols[protocol] = (early_check, m, check_exists)
+
     @classmethod
     def addProtocolPullPlugin(cls, protocol, m):
         cls.pullProtocols[protocol] = m
 
-
     @classmethod
-    def getMimeType(cls, format): 
-        d = { 
-            'xls' : ('application', 'vnd.ms-excel'), 
-            'xlsx' : ('application', 'vnd.ms-excel'), 
-            'csv' : ('text', 'csv')
+    def getMimeType(cls, format):
+        d = {
+            'xls': ('application', 'vnd.ms-excel'),
+            'xlsx': ('application', 'vnd.ms-excel'),
+            'csv': ('text', 'csv')
         }
-        return d.get(format, ('application','octet-stream'))
+        return d.get(format, ('application', 'octet-stream'))
 
-    def to_string(self, format="csv"): 
+    def to_string(self, format="csv"):
         buf = StringIO()
         self.push(stream=buf, format=format)
         return buf.getvalue()
 
-    
+
 def get_extension(filename):
     if not filename:
         return None
-    fileBaseName, fileExtension = os.path.splitext(filename) 
-    fileExtension = fileExtension.lower()
-    if len(fileExtension) > 0:
-        fileExtension = fileExtension[1:]
-    return fileExtension
-    
+    file_base_name, file_extension = os.path.splitext(filename)
+    file_extension = file_extension.lower()
+    if len(file_extension) > 0:
+        file_extension = file_extension[1:]
+    return file_extension
+
+
 def guess_format(compress_format, format, filename):
     "Guess the format from the filename and provided metadata"
     if compress_format:
         return (compress_format, format)
     ext = get_extension(filename)
-    if ext in BabeBase.pullCompressExtensions: 
+    if ext in BabeBase.pullCompressExtensions:
         return (BabeBase.pullCompressExtensions[ext], format)
     if format:
-        if not format in BabeBase.pullFormats: 
+        if format not in BabeBase.pullFormats:
             raise Exception("Unsupported format %s" % format)
-        return (None, format) 
+        return (None, format)
     if ext in BabeBase.pullExtensions:
         return (compress_format, BabeBase.pullExtensions[ext])
     raise Exception("Unable to guess extension %s for filename %s" % (ext, filename))
-    
+
 
 def pull(babe, **kwargs):
-    fileExtension = None
+    file_extension = None
     to_close = []
 
-    # Existing iterator go first. 
+    # Existing iterator go first.
     if hasattr(babe, 'stream') and babe.stream:
         for row in babe:
             yield row
 
-    # Guess format             
+    # Guess format
     filename = kwargs.get('filename', None)
     stream = kwargs.get('stream', None)
     string = kwargs.get('string', None)
@@ -376,11 +389,11 @@ def pull(babe, **kwargs):
     command_input = kwargs.get('command_input', None)
     format = kwargs.get('format', None)
 
-    (compress_format, format)  =  guess_format(compress_format, format, filename)
+    (compress_format, format) = guess_format(compress_format, format, filename)
 
     if 'protocol' in kwargs:
         instream = BabeBase.pullProtocols[kwargs['protocol']](filename, **kwargs)
-        if isinstance(instream, list): 
+        if isinstance(instream, list):
             to_close.extend(instream)
         else:
             to_close.append(instream)
@@ -396,10 +409,10 @@ def pull(babe, **kwargs):
         p.stdin.close()
         instream = p.stdout
     elif filename:
-        instream = open(filename, 'rb') 
+        instream = open(filename, 'rb')
         to_close.append(instream)
     else:
-        raise Exception("No input stream provided")  
+        raise Exception("No input stream provided")
 
     if isinstance(instream, list):
         instreams = instream
@@ -407,16 +420,16 @@ def pull(babe, **kwargs):
         instreams = [instream]
 
     for instream in instreams:
-        if (compress_format and BabeBase.pullCompressFormatsNeedSeek[compress_format])  or (format and BabeBase.pullFormatsNeedSeek[format]):
-            if not hasattr(instream, 'seek'): 
-                ## Create a temporary file
+        if (compress_format and BabeBase.pullCompressFormatsNeedSeek[compress_format]) \
+                or (format and BabeBase.pullFormatsNeedSeek[format]):
+            if not hasattr(instream, 'seek'):
+                # Create a temporary file
                 tf = tempfile.NamedTemporaryFile()
                 shutil.copyfileobj(instream, tf)
                 tf.flush()
                 tf.seek(0)
                 instream = tf
                 to_close.append(instream)
-
 
         if compress_format:
             (content_list, uncompress) = BabeBase.pullCompressFormats[compress_format]
@@ -428,68 +441,78 @@ def pull(babe, **kwargs):
             instream = uncompress(compress_handle, filename)
             to_close.append(instream)
         else:
-            f = format 
-            
+            f = format
 
-        ## Parse high level 
-        i = BabeBase.pullFormats[f](format=fileExtension, stream=instream, kwargs=kwargs)
+        # Parse high level
+        i = BabeBase.pullFormats[f](format=file_extension, stream=instream, kwargs=kwargs)
 
-        #count = 0
-        for r in i: 
-            #if count % 100000 == 1: 
-            #    print 'Processed %u lines' % count  
-            yield r 
-        
+        # count = 0
+        for r in i:
+            # if count % 100000 == 1:
+            #    print 'Processed %u lines' % count
+            yield r
+
     if command:
         p.wait()
-        
+
     for s in to_close:
         s.close()
-        
-        
+
+
 BabeBase.register('pull', pull)
 
+
 def split_ext(filename):
-    fileBaseName, fileExtension = os.path.splitext(filename) 
-    fileExtension = fileExtension.lower()
-    if len(fileExtension) > 0:
-        fileExtension = fileExtension[1:]
-    return (fileBaseName, fileExtension)
+    file_base_name, file_extension = os.path.splitext(filename)
+    file_extension = file_extension.lower()
+    if len(file_extension) > 0:
+        file_extension = file_extension[1:]
+    return (file_base_name, file_extension)
+
 
 def to_list(instream):
-    return list(filter(lambda x : not isinstance(x, StreamMeta), instream))
+    return list(filter(lambda x: not isinstance(x, StreamMeta), instream))
 
 
-def push(instream, filename=None, filename_template = None, directory = None, stream = None, format=None, encoding=None, protocol=None, compress=None, stream_dict=None, **kwargs):
+def push(instream,
+         filename=None,
+         filename_template=None,
+         directory=None,
+         stream=None,
+         format=None,
+         encoding=None,
+         protocol=None,
+         compress=None,
+         stream_dict=None,
+         **kwargs):
     outstream = None
     compress_format = None
-    fileExtension = None
-    fileBaseName = None
+    file_extension = None
+    file_base_name = None
     to_close = []
 
-
-    ## Guess format from file extensions .. 
+    # Guess format from file extensions ..
     filename_for_guess = filename if filename else filename_template
 
-    if filename_for_guess: 
-        fileBaseName, fileExtension = split_ext(filename_for_guess) 
+    if filename_for_guess:
+        file_base_name, file_extension = split_ext(filename_for_guess)
 
-    if fileExtension in BabeBase.pushCompressExtensions:
+    if file_extension in BabeBase.pushCompressExtensions:
         if not compress_format:
-            compress_format = BabeBase.pushCompressExtensions[fileExtension]
-        fileBaseName, fileExtension = split_ext(fileBaseName)
+            compress_format = BabeBase.pushCompressExtensions[file_extension]
+        file_base_name, file_extension = split_ext(file_base_name)
 
-    if not format and fileExtension in BabeBase.pushExtensions:
-        format = BabeBase.pushExtensions[fileExtension] 
-            
-    if not format: 
+    if not format and file_extension in BabeBase.pushExtensions:
+        format = BabeBase.pushExtensions[file_extension]
+
+    if not format:
         format = "csv"
-    
-    if not format in BabeBase.pushFormats: 
-        raise Exception('Unsupported format %s' % format) 
-    if compress_format and not compress_format in BabeBase.pushCompressFormats:
+
+    if format not in BabeBase.pushFormats:
+        raise Exception('Unsupported format %s' % format)
+    if compress_format and compress_format not in BabeBase.pushCompressFormats:
         raise Exception('Unsupported compression format %s' % compress_format)
-                
+
     if protocol and not (protocol in BabeBase.pushProtocols):
         raise Exception('Unsupported protocol %s' % protocol)
 
@@ -498,21 +521,21 @@ def push(instream, filename=None, filename_template = None, directory = None, st
         if early_check:
             early_check(**kwargs)
 
-    if filename: 
+    if filename:
         if protocol and kwargs.get("ignore_if_exists", False):
             check_exists = BabeBase.pushProtocols[protocol][2]
             if check_exists:
                 if check_exists(filename, **kwargs):
-                    logging.info("Skipping push for existing file %s" %  filename)
-                    return 
+                    logging.info("Skipping push for existing file %s" % filename)
+                    return
 
     it = iter(instream)
     while True:
         this_filename = None
-        try: 
+        try:
             header = it.next()
-        except StopIteration: 
-            break 
+        except StopIteration:
+            break
 
         if not filename and filename_template:
             d = header.__dict__.copy()
@@ -523,51 +546,49 @@ def push(instream, filename=None, filename_template = None, directory = None, st
         if directory and filename:
             this_filename = os.path.join(directory, this_filename if this_filename else filename)
 
-        if this_filename == None:
-            this_filename = filename 
+        if this_filename is None:
+            this_filename = filename
 
-        # If external protocol or compression, write to a temporary file. 
+        # If external protocol or compression, write to a temporary file.
         if protocol or compress_format:
-            outstream = tempfile.NamedTemporaryFile()
+            # format is here for mimetype detection by google json storage api
+            outstream = tempfile.NamedTemporaryFile(suffix='.%s' % format)
             to_close.append(outstream)
-        elif stream_dict != None: 
+        elif stream_dict is not None:
             n = filename if filename else header.get_stream_name()
-            if not n  in stream_dict:
+            if n not in stream_dict:
                 stream_dict[n] = StringIO()
             outstream = stream_dict[n]
-        elif stream: 
+        elif stream:
             outstream = stream
-        else: 
+        else:
             outstream = open(this_filename, 'wb')
             to_close.append(outstream)
-            
-        # Actually write the file. 
+
+        # Actually write the file.
         BabeBase.pushFormats[format](format, header, it, outstream, encoding, **kwargs)
         outstream.flush()
-        
+
         if compress_format:
-            # Apply file compression. If output protocol, use a temporary file name 
+            # Apply file compression. If output protocol, use a temporary file name
             if protocol:
                 n = tempfile.NamedTemporaryFile()
                 compress_file = n.name
             else:
                 compress_file = this_filename
             name_in_archive = os.path.splitext(os.path.basename(this_filename))[0] + '.' + format
-            BabeBase.pushCompressFormats[compress_format](compress_file, outstream.name, name_in_archive)
+            BabeBase.pushCompressFormats[compress_format](
+                compress_file, outstream.name, name_in_archive)
             if protocol:
-                outstream = n 
-                
-        # Apply protocol 
+                outstream = n
+
+        # Apply protocol
         if protocol:
             BabeBase.pushProtocols[protocol][1](outstream.name, this_filename, **kwargs)
-        
+
         for s in to_close:
             s.close()
 
+
 BabeBase.registerFinalMethod('push', push)
 BabeBase.registerFinalMethod('to_list', to_list)
-
-
-
-
-        

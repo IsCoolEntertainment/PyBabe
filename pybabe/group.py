@@ -33,10 +33,11 @@ def build_reducer(reducer):
 
 
 def group(stream, key, reducer,
-		assume_sorted=False, typename=None, fields=None):
+          assume_sorted=False, typename=None, fields=None):
     """
 GroupBy all values for a key.
-If reducer is a function, function(t, key, row_group) is called with an array of all rows matching the key value
+If reducer is a function, function(t, key, row_group) is called with an array of
+all rows matching the key value
         t is the expected return type
         key is the common key for the group.
 Otherwise can be a 'Reducer' object.
