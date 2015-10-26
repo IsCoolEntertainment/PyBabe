@@ -57,6 +57,7 @@ def pull(format, stream, kwargs):
         pass
     delimiter = kwargs.get('delimiter', None)
     quoting = kwargs.get('quoting', None)
+    quotechar = kwargs.get('quotechar', None)
     sniff_read = stream.next()
     stream = PrefixReader(sniff_read, stream, linefilter=kwargs.get("linefilter", None))
     dialect = csv.Sniffer().sniff(sniff_read)
@@ -73,6 +74,8 @@ def pull(format, stream, kwargs):
         dialect.delimiter = delimiter
     if quoting:
         dialect.quoting = quoting
+    if quotechar:
+        dialect.quotechar = quotechar
     for row in csvpull(stream, dialect, kwargs):
         yield row
 
@@ -86,12 +89,14 @@ class default_dialect(csv.Dialect):
     quotechar = '"'
 
 
-def push(format, metainfo, instream, outfile, encoding, delimiter=',', **kwargs):
+def push(format, metainfo, instream, outfile, encoding, delimiter=',', quotechar=',', **kwargs):
     if not encoding:
         encoding = "utf8"
     dialect = kwargs.get('dialect', default_dialect)
     if delimiter:
         dialect.delimiter = delimiter
+    if quotechar:
+        dialect.quotechar = quotechar
     writer = UnicodeCSVWriter(outfile, dialect=dialect, encoding=encoding)
     writer.writerow(metainfo.fields)
     for k in instream:

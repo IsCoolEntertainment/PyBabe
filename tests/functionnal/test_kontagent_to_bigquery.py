@@ -7,7 +7,6 @@ And the GOOGLE_APPLICATION_CREDENTIALS environment variable set
 """
 
 from .. import TestCase, can_connect_to_the_net, skipUnless
-import csv
 import string
 import base64
 from pybabe import Babe
@@ -99,9 +98,10 @@ class TestKontagentToBigQuery(TestCase):
     @skipUnless(can_connect_to_the_net(), 'Requires net connection')
     def test_gs_load_from_kontagent(self):
         # export 1 full day
-        game = 'crazy'
-        day = '20151010'
-        hour = '03'
+        bucket = 'bertrandtest'
+        game = 'wordox'
+        day = '20151021'
+        hour = '14'
         table_name = '{}_{}'.format(game, day)
         filename = '{}.csv'.format(table_name + hour)
         result = time.strptime(day + ' ' + hour, '%Y%m%d %H')
@@ -110,14 +110,6 @@ class TestKontagentToBigQuery(TestCase):
                               result.tm_mday,
                               result.tm_hour)
         end_time = start_time + timedelta(hours=1)
-
-        class Dialect(csv.Dialect):
-            lineterminator = '\n'
-            delimiter = '\t'
-            doublequote = False
-            escapechar = '\\'
-            quoting = csv.QUOTE_MINIMAL
-            quotechar = '|'
 
         a = Babe()
         a = a.pull_kontagent(start_time=start_time,
@@ -130,12 +122,14 @@ class TestKontagentToBigQuery(TestCase):
         a = a.filter(lambda row: uid_type_check(row) is True)
         a.push(filename=filename,
                format='csv',
-               dialect=Dialect,
+               delimiter='\t',
+               quotechar='|',
                encoding='utf8',
-               bucket='bertrandtest',
+               bucket=bucket,
                protocol='gs')
 
         a.push_bigquery(filename=filename,
+                        bucket=bucket,
                         project_id='bigquery-testing-1098',
                         dataset_id='ladata',
                         table_name=table_name,
