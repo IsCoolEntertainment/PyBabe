@@ -37,7 +37,7 @@ def push_bigquery(stream,
     job_data = {
         'jobReference': {
             'projectId': project_id,
-            'job_id': job_id,
+            'jobId': job_id,
         },
         'configuration': {
             'load': {
