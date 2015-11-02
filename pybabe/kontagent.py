@@ -23,10 +23,6 @@ def get_url(date, kt_user, kt_pass, kt_appid):
     return url
 
 
-def add_password_to_url(url, kt_user, kt_pass):
-    return url.replace('query.kontagent.net', '%s:%s@query.kontagent.net' % (kt_user, kt_pass))
-
-
 def convert_to_datetime(d, referent_timezone):
     if isinstance(d, basestring):
         try:
@@ -232,11 +228,24 @@ def process_line(gic, base_date, line, discard_names):
             tracking_tag = tags[0]
         else:
             tracking_tag = params['su']
-    return t(date, hour, time, name, uid,
-             st1, st2, st3,
-             channel_type, value, level,
-             recipients, tracking_tag, data, ip,
-             mobile_os, mobile_carrier, mobile_device)
+    return t(date,
+             hour,
+             time,
+             name,
+             uid,
+             st1,
+             st2,
+             st3,
+             channel_type,
+             value,
+             level,
+             recipients,
+             tracking_tag,
+             data,
+             ip,
+             mobile_os,
+             mobile_carrier,
+             mobile_device)
 
 log = logging.getLogger('kontagent')
 

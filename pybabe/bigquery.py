@@ -8,6 +8,14 @@ from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
 
 
+class BigQueryException(RuntimeError):
+    pass
+
+
+class FailedJobException(BigQueryException):
+    pass
+
+
 def get_bigquery():
     # [START build_service]
     # Grab the application's default credentials from the environment.
@@ -75,7 +83,7 @@ def push_bigquery(stream,
 
         if result['status']['state'] == 'DONE':
             if 'errorResult' in result['status']:
-                raise RuntimeError(result['status']['errorResult'])
+                raise FailedJobException(result['status']['errorResult'])
             print('Job complete.')
             return
 
