@@ -1,4 +1,5 @@
-
+# coding: utf-8
+from __future__ import print_function
 from base import BabeBase
 from cStringIO import StringIO
 import fnmatch
@@ -86,7 +87,7 @@ class ReadLineWrapper(object):
 
 
 def progress_call_back(done, todo):
-    print "Done %u out of %u (%f%%)" % (done, todo, (done * 100) / todo)
+    print("Done %u out of %u (%f%%)" % (done, todo, (done * 100) / todo))
 
 
 def pull(filename_remote, **kwargs):

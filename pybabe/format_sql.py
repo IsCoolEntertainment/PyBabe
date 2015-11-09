@@ -1,4 +1,5 @@
-
+# coding: utf-8
+from __future__ import print_function
 from base import BabeBase, StreamFooter, StreamHeader
 import sys
 import re
@@ -17,7 +18,8 @@ def parse_value(pos, line):
         else:
             return (unescape(m.group(1)), m.end(0))
     else:
-        raise Exception("ParseError %s", line[pos:pos + 10 if pos + 10 < len(line) - 1 else len(line) - 1])
+        raise Exception("ParseError %s",
+                        line[pos:pos + 10 if pos + 10 < len(line) - 1 else len(line) - 1])
 
 
 def unescape(s):
@@ -42,7 +44,8 @@ def parse_tuple(pos, line):
             pos = pos + 1
             break
         else:
-            raise Exception("ParseError %s", line[pos:pos + 10 if pos + 10 < len(line) - 1 else len(line) - 1])
+            raise Exception("ParseError %s",
+                            line[pos:pos + 10 if pos + 10 < len(line) - 1 else len(line) - 1])
     return (buf, pos)
 
 
@@ -74,8 +77,8 @@ def pull(format, stream, kwargs):
                     break
                 else:
                     raise Exception("ParseError pos %u " % pos)
-    except TypeError, e:
-        print len(elts), elts
+    except TypeError as e:
+        print(len(elts), elts)
         raise e
     yield StreamFooter()
 
@@ -83,4 +86,4 @@ BabeBase.addPullPlugin("sql", ["sql"], pull)
 
 if __name__ == "__main__":
     for line in sys.stdin:
-        print parse_tuple(0, line)
+        print(parse_tuple(0, line))

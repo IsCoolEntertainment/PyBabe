@@ -1,5 +1,5 @@
 # coding: utf-8
-
+from __future__ import print_function
 from base import BabeBase
 from protocol_s3 import ReadLineWrapper
 from googleapiclient.errors import HttpError
@@ -50,7 +50,7 @@ def pull(filename_remote, **kwargs):
         object=filename_remote,
         bucket=kwargs['bucket'])
     resp = req.execute()
-    print resp
+    print(resp)
     files = []
     for key in keys:
         logging.info("S3 Load: %s", key)

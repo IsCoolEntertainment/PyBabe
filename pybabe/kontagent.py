@@ -1,4 +1,5 @@
-
+# coding: utf-8
+from __future__ import print_function
 import datetime
 import json
 import urllib
@@ -48,9 +49,9 @@ def enumerate_period_per_hour(start_time, end_time, referent_timezone):
     start_time = convert_to_datetime(start_time, referent_timezone)
     end_time = convert_to_datetime(end_time, referent_timezone)
     time = start_time
-    print start_time, end_time
+    print(start_time, end_time)
     while time < end_time:
-        print time
+        print(time)
         yield time
         time = time + datetime.timedelta(hours=1)
 
@@ -143,8 +144,8 @@ def process_line(gic, base_date, line, discard_names):
                 if o.query:
                     for k, v in cgi.parse_qs(o.query).items():
                         params[k] = v[0]
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
                 pass
     data = params.get('data', None)
     if data:
@@ -278,7 +279,7 @@ def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
                     try:
                         # ensure base directory exists.
                         os.makedirs(os.path.dirname(filepath))
-                    except OSError, e:
+                    except OSError as e:
                         if e.errno == 17:  # File Exists.
                             pass
                         else:
@@ -291,7 +292,7 @@ def read_url_with_cache(url, kt_user, kt_pass, kt_file_cache):
                     raise Exception('Failed to retrieve url %s' % url)
                 break
             except (Exception, OSError) as e:
-                print e
+                print(e)
 
 
 def pull_kontagent(nostream, start_time, end_time,

@@ -1,4 +1,4 @@
-
+# coding: utf-8
 from base import BabeBase, StreamHeader, StreamFooter
 import csv
 from charset import UTF8Recoder, UTF8RecoderWithCleanup, PrefixReader, UnicodeCSVWriter
@@ -40,7 +40,7 @@ def csvpull(stream, dialect, kwargs):
     for row in reader:
         try:
             yield metainfo.t._make([build_value(x, null_value) for x in row])
-        except Exception, e:
+        except Exception as e:
             if ignore_malformed:
                 log.warn("Malformed line: %s, %s" % (row, e))
             else:

@@ -1,5 +1,5 @@
-
-
+# coding: utf-8
+from __future__ import print_function
 from base import BabeBase, StreamHeader, StreamFooter
 import csv
 from subprocess import Popen, PIPE
@@ -54,6 +54,7 @@ PULL_DB = {
         }
 }
 
+
 def infobright_preimport():
     d = '/tmp/rejectdir'
     if not os.path.exists(d):
@@ -72,11 +73,11 @@ PUSH_DB = {
         'password': '-p%s',
         'drop_table': 'DROP TABLE IF EXISTS %s;\n',
         'create_table': 'CREATE TABLE IF NOT EXISTS ${table} ( ${fields} );\n',
-        'preimport' : infobright_preimport,
+        'preimport': infobright_preimport,
         'import_query': """set @BH_REJECT_FILE_PATH = '/tmp/rejectdir/reject_file';
                 set @BH_ABORT_ON_COUNT = 10;
                 LOAD DATA LOCAL INFILE '%s' INTO TABLE %s FIELDS TERMINATED BY '\t';\n""",
-      ##  'delete_partition': 'DELETE FROM ${table} where ${condition};\n'
+        #  'delete_partition': 'DELETE FROM ${table} where ${condition};\n'
     },
     'sqlite':
     {
@@ -96,13 +97,12 @@ PUSH_DB = {
         'import_query': "LOAD DATA LOCAL INFILE '%s' INTO TABLE %s FIELDS TERMINATED BY '\t';\n",
         'delete_partition': 'DELETE FROM ${table} where ${condition};\n'
     },
-    'infinidb': 
-    { 
-     
-## Warning: seteuid must be set on the cpimport command
-        'load_command' : ['/usr/local/Calpont/bin/cpimport',  '-s',  '\t',  '${database}', '${table}'],
-        'command' : ['/usr/local/Calpont/mysql/bin/mysql', '--defaults-file=/usr/local/Calpont/mysql/my.cnf'],
-        'user' : '-u%s',
+    'infinidb':
+    {
+        # Warning: seteuid must be set on the cpimport command
+        'load_command': ['/usr/local/Calpont/bin/cpimport', '-s', '\t', '${database}', '${table}'],
+        'command': ['/usr/local/Calpont/mysql/bin/mysql', '--defaults-file=/usr/local/Calpont/mysql/my.cnf'],
+        'user': '-u%s',
         'drop_table': 'DROP TABLE IF EXISTS %s;',
         "create_table": "CREATE TABLE  ${table} ( ${fields} );",
         'delete_partition': 'DELETE FROM ${table} where ${condition};'
@@ -118,8 +118,17 @@ PUSH_DB = {
 }
 
 
-def pull_sql(false_stream, query=None, table=None, host=None, database_kind=None, database=None,
-    ssh_host=None, user=None, password=None, sql_command=None, **kwargs):
+def pull_sql(false_stream,
+             query=None,
+             table=None,
+             host=None,
+             database_kind=None,
+             database=None,
+             ssh_host=None,
+             user=None,
+             password=None,
+             sql_command=None,
+             **kwargs):
     """Pull from SQL query to the database.
     query : The query to execute, if not SELECT * FROM table
     table : The table to fetch from
@@ -169,16 +178,16 @@ def pull_sql(false_stream, query=None, table=None, host=None, database_kind=None
     dialect = sql_dialect()
 
     stream = readstream if readstream else p.stdout
-    #if kwargs.get('utf8_cleanup', False):
-    #    stream = UTF8RecoderWithCleanup(stream, kwargs.get('encoding', 'utf-8'))
-    #elif codecs.getreader(kwargs.get('encoding', 'utf-8'))  != codecs.getreader('utf-8'):
-    #    stream = UTF8Recoder(stream, kwargs.get('encoding', None))
-    #else:
-    #    pass
+    # if kwargs.get('utf8_cleanup', False):
+    #     stream = UTF8RecoderWithCleanup(stream, kwargs.get('encoding', 'utf-8'))
+    # elif codecs.getreader(kwargs.get('encoding', 'utf-8'))  != codecs.getreader('utf-8'):
+    #     stream = UTF8Recoder(stream, kwargs.get('encoding', None))
+    # else:
+    #     pass
     reader = csv.reader(stream, dialect=dialect)
     fields = reader.next()
-    ## Vectorwise specifics ...
-    ## Remove the last characeter (space on the l)
+    # Vectorwise specifics ...
+    # Remove the last characeter (space on the l)
     if database_kind == 'vectorwise':
         fields[-1] = fields[-1][:-1]
         if fields[0].startswith("E_"):
@@ -192,14 +201,14 @@ def pull_sql(false_stream, query=None, table=None, host=None, database_kind=None
     for row in reader:
         if database_kind == 'vectorwise':
             if len(row) == 0:
-                print 'Error, empty row: %s ' % row
+                print('Error, empty row: %s ' % row)
                 continue
             row[-1] = row[-1][:-1]
         try:
             yield metainfo.t._make([unicode(x, 'utf-8') for x in row])
         except UnicodeDecodeError:
             if ignore_bad_lines:
-                print "Error on line ", x
+                print("Error on line ", x)
             else:
                 raise
     p.wait()
@@ -235,7 +244,7 @@ class TempFifo(object):
             try:
                 fd = os.open(self.filename, os.O_WRONLY | os.O_NONBLOCK)
                 self.writestream = os.fdopen(fd, 'w')
-            except OSError, e:
+            except OSError as e:
                 if retry == 4:
                     raise e
                 time.sleep(0.5)
@@ -250,8 +259,20 @@ class TempFifo(object):
         os.rmdir(self.tmpdir)
 
 
-def push_sql(stream, database_kind, table=None, host=None, create_table=False, drop_table=False, protocol=None, database=None,
-    ssh_host=None, user=None, password=None, sql_command=None, delete_partition=False, **kwargs):
+def push_sql(stream,
+             database_kind,
+             table=None,
+             host=None,
+             create_table=False,
+             drop_table=False,
+             protocol=None,
+             database=None,
+             ssh_host=None,
+             user=None,
+             password=None,
+             sql_command=None,
+             delete_partition=False,
+             **kwargs):
     db_params = PUSH_DB[database_kind]
     c = db_params['command']
     if user:
@@ -292,13 +313,13 @@ def push_sql(stream, database_kind, table=None, host=None, create_table=False, d
             if delete_partition and not drop_table:
                 if not metainfo.partition:
                     raise Exception("No partition information available in header: unable to delete partition")
-                if not 'delete_partition' in db_params:
-                    print "Warning: target database does not support delete"
+                if 'delete_partition' not in db_params:
+                    print("Warning: target database does not support delete")
                 else:
                     conditions = ["%s = '%s'" % (k, str(v)) for (k, v) in metainfo.partition.iteritems()]
                     condition = ' AND '.join(conditions)
                     delete_partition_query = Template(db_params['delete_partition']).substitute(table=table_name, condition=condition)
-                    print "DELETING", delete_partition_query
+                    print("DELETING", delete_partition_query)
                     p.stdin.write(delete_partition_query)
                     p.stdin.flush()
                     if p.returncode:
@@ -309,7 +330,7 @@ def push_sql(stream, database_kind, table=None, host=None, create_table=False, d
 
             writestream = None
 
-            #print import_query
+            # print import_query
             if "preimport" in db_params:
                 db_params["preimport"]()
 
@@ -322,14 +343,14 @@ def push_sql(stream, database_kind, table=None, host=None, create_table=False, d
                 writestream = tmpfifo.open_write()
             elif 'load_command' in db_params:
                 load_command = [Template(s).substitute(table=table_name, database=database) for s in db_params['load_command']]
-                print load_command
+                print(load_command)
                 pp = Popen(load_command, stdin=PIPE, stdout=None, stderr=None)
                 writestream = pp.stdin
             else:
                 raise Exception("Missing load_command or import_query in db_kind spec")
 
             writer = UnicodeCSVWriter(writestream, dialect=sql_dialect(), encoding="utf-8")
-            #writer = csv.writer(writestream, dialect=sql_dialect())
+            # writer = csv.writer(writestream, dialect=sql_dialect())
         elif isinstance(row, StreamFooter):
             if "import_query" in db_params:
                 tmpfifo.close()

@@ -1,7 +1,8 @@
-
+# coding: utf-8
+from __future__ import print_function
 from base import BabeBase
 import os
-from os.path import join,getsize,getctime
+from os.path import join, getsize, getctime
 import datetime
 import time
 import csv
@@ -51,10 +52,10 @@ class FileCache(object):
                                     dir_name = os.path.dirname(os.path.realpath(junk_file['filepath']))
                                     if not dir_name == '/tmp':
                                         os.removedirs(dir_name)
-                                except OSError, e:
+                                except OSError as e:
                                     pass
                             else:
-                                print '[{date}] DELETE - File {f} not found'.format(date=str(datetime.datetime.now()), f=junk_file['filepath'])
+                                print('[{date}] DELETE - File {f} not found'.format(date=str(datetime.datetime.now()), f=junk_file['filepath']))
                         global_size -= junk_file['size']
                         spamwriter.writerow([junk_file['created_date'], junk_file['filepath']])
                     else:

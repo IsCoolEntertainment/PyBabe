@@ -1,3 +1,4 @@
+# coding: utf-8
 import urllib2
 import json
 from decimal import Decimal
@@ -27,10 +28,10 @@ def get_rate(currency_from, currency_to):
 
     try:
         return from_google(currency_from, currency_to)
-    except Exception, e:
+    except Exception as e:
         try:
             return from_yahoo(currency_from, currency_to)
-        except Exception, e:
+        except Exception as e:
             raise e
 
 def from_google(currency_from, currency_to):

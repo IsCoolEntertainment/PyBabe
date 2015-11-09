@@ -1,4 +1,5 @@
-
+# coding: utf-8
+from __future__ import print_function
 from base import BabeBase, StreamHeader, StreamMeta
 import os
 
@@ -8,7 +9,7 @@ gic = None
 
 def get_gic():
     global gic
-    if gic == None:
+    if gic is None:
         if os.path.exists('/usr/share/GeoIP/GeoIP.dat'):
             default = "/usr/share/GeoIP/GeoIP.dat"
         elif os.path.exists("/usr/local/share/GeoIP/GeoLiteCity.dat"):
@@ -23,12 +24,21 @@ def get_gic():
     return gic
 
 
-def geoip(stream, field="ip", ip_blacklist=set(), country_code="country_code", region_name="region_name", city="city", latitude="latitude", longitude="longitude", ignore_error=True):
+def geoip(stream,
+          field="ip",
+          ip_blacklist=set(),
+          country_code="country_code",
+          region_name="region_name",
+          city="city",
+          latitude="latitude",
+          longitude="longitude",
+          ignore_error=True):
     gic = get_gic()
     error_count = 0
     for r in stream:
         if isinstance(r, StreamHeader):
-            header = r.insert(typename=None, fields=[country_code, region_name, city, latitude, longitude])
+            header = r.insert(typename=None,
+                              fields=[country_code, region_name, city, latitude, longitude])
             yield header
         elif isinstance(r, StreamMeta):
             yield r
@@ -40,11 +50,11 @@ def geoip(stream, field="ip", ip_blacklist=set(), country_code="country_code", r
                     continue
                 cc = gic.record_by_addr(ip)
                 yield header.t(*(r + (cc['country_code'], cc['region_name'], cc['city'], cc['latitude'], cc['longitude'])))
-            except Exception, e:
+            except Exception as e:
                 if ignore_error:
                     if error_count == 0:
-                        print "Error in load", ip, e
-                        error_count = error_count + 1 
+                        print("Error in load", ip, e)
+                        error_count = error_count + 1
                     yield header.t(*r + (None, None, None, None, None))
                 else:
                     raise e
@@ -67,7 +77,7 @@ Add a 'country_code' field from IP address in field "IP"
             ip = getattr(r, field)
             try:
                 cc = gic.country_code_by_addr(ip)
-            except Exception, e:
+            except Exception as e:
                 if ignore_error:
                     cc = None
                     pass
@@ -75,5 +85,5 @@ Add a 'country_code' field from IP address in field "IP"
                     raise e
             yield header.t(*(r + (cc,)))
 
-## TODO : full region parsing
+# TODO : full region parsing
 BabeBase.register("geoip_country_code", geoip_country_code)
