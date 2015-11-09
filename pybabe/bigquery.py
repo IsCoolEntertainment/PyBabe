@@ -35,8 +35,6 @@ def push_bigquery(stream,
                   dataset_id,
                   table_name,
                   schema,
-                  job_id,
-                  data_path=None,
                   num_retries=2,
                   **kwargs):
 
@@ -44,8 +42,7 @@ def push_bigquery(stream,
 
     job_data = {
         'jobReference': {
-            'projectId': project_id,
-            'jobId': job_id,
+            'projectId': project_id
         },
         'configuration': {
             'load': {
