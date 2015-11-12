@@ -191,9 +191,9 @@ def pull_sql(false_stream,
     if database_kind == 'vectorwise':
         fields[-1] = fields[-1][:-1]
         if fields[0].startswith("E_"):
-            print >>sys.stderr, ' '.join(fields)
+            print(' '.join(fields), file=sys.stderr)
             for line in stream:
-                print >>sys.stderr, line.rstrip()
+                print(line.rstrip(), file=sys.stderr)
             raise Exception("Error in SQL Command")
     metainfo = StreamHeader(**dict(kwargs, typename=table, fields=fields))
 

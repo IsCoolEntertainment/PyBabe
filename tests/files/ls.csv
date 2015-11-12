@@ -1,10 +1,11 @@
 filename
+COPYING
 data
 env
 examples
-optional-requirements.txt
 pybabe
 README.md
+requirements.txt
 setup.py
 test-requirements.txt
 tests
