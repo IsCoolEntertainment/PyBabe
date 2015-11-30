@@ -206,7 +206,7 @@ def pull_sql(false_stream,
             row[-1] = row[-1][:-1]
         try:
             yield metainfo.t._make([unicode(x, 'utf-8') for x in row])
-        except UnicodeDecodeError:
+        except Exception:
             if ignore_bad_lines:
                 print("Error on line ", x)
             else:
