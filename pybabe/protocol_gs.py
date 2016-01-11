@@ -1,6 +1,6 @@
 # coding: utf-8
 from __future__ import print_function
-from glcoud import get_storage
+from gcloud import get_storage
 from base import BabeBase
 from protocol_s3 import ReadLineWrapper
 from googleapiclient.errors import HttpError
