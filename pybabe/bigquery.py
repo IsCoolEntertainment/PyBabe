@@ -46,6 +46,8 @@ def push_bigquery(stream,
         },
         'configuration': {
             'load': {
+                'quote': '|',
+                'allowQuotedNewlines': True,
                 'sourceUris': ['gs://{}/{}'.format(bucket, filename)],
                 'schema': {
                     'fields': schema
