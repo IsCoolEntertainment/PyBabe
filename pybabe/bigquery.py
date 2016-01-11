@@ -39,7 +39,6 @@ def push_bigquery(stream,
                   **kwargs):
 
     bigquery = get_bigquery()
-
     job_data = {
         'jobReference': {
             'projectId': project_id
@@ -92,7 +91,7 @@ def push_bigquery(stream,
 def pull_bigquery(false_stream,
                   project_id,
                   query=None,
-                  timeout=1000,
+                  timeout=10000,
                   num_retries=2,
                   **kwargs):
 
@@ -100,10 +99,11 @@ def pull_bigquery(false_stream,
 
     query_data = {
         'query': query,
-        'timeoutMs': timeout,
+        'timeoutMs': 0,  # use a timeout of 0 means we'll always need
+        # to get the results via getQueryResults
     }
 
-    query_job = bigquery.jobs().query(
+    response = bigquery.jobs().query(
         projectId=project_id,
         body=query_data
     ).execute(
@@ -111,27 +111,36 @@ def pull_bigquery(false_stream,
     )
 
     metainfo = None
-    page_token = None
-    while True:
-        if not metainfo:
-            fields = [f['name'] for f in query_job['schema']['fields']]
-            typename = kwargs.get('typename', 'BigQuery')
-            metainfo = StreamHeader(**dict(kwargs, typename=typename, fields=fields))
-            yield metainfo
+    job_ref = response['jobReference']
 
-        page = bigquery.jobs().getQueryResults(
+    while True:
+
+        page_token = response.get('pageToken', None)
+        query_complete = response.get('jobComplete', False)
+
+        if query_complete:
+            if not metainfo:
+                fields = [f['name'] for f in response['schema']['fields']]
+                typename = kwargs.get('typename', 'BigQuery')
+                metainfo = StreamHeader(**dict(kwargs, typename=typename, fields=fields))
+                yield metainfo
+
+            for row in response['rows']:
+                yield metainfo.t(*[field['v'] for field in row['f']])
+
+            if page_token is None:
+                # The query is done and there are no more results
+                # to read.
+                yield StreamFooter()
+                break
+
+        response = bigquery.jobs().getQueryResults(
             pageToken=page_token,
-            **query_job['jobReference']
+            timeoutMs=timeout,
+            **job_ref
         ).execute(
             num_retries=num_retries
         )
-
-        for row in page['rows']:
-            yield metainfo.t(*[field['v'] for field in row['f']])
-        page_token = page.get('pageToken')
-        if not page_token:
-            yield StreamFooter()
-            break
 
 
 BabeBase.register('pull_bigquery', pull_bigquery)

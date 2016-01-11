@@ -1,5 +1,6 @@
 # coding: utf-8
 from __future__ import print_function
+from glcoud import get_storage
 from base import BabeBase
 from protocol_s3 import ReadLineWrapper
 from googleapiclient.errors import HttpError
@@ -8,18 +9,9 @@ import logging
 log = logging.getLogger('Google Storage')
 
 
-def get_service():
-    from apiclient import discovery
-    from oauth2client.client import GoogleCredentials
-
-    credentials = GoogleCredentials.get_application_default()
-    service = discovery.build('storage', 'v1', credentials=credentials)
-    return service
-
-
 def push(filename_topush, filename_remote, **kwargs):
     log.info('pushing to {}/{}'.format(kwargs['bucket'], filename_remote))
-    service = get_service()
+    service = get_storage()
     req = service.objects().insert(
         media_body=filename_topush,
         name=filename_remote,
@@ -30,7 +22,7 @@ def push(filename_topush, filename_remote, **kwargs):
 
 def check_exists(filename_remote, **kwargs):
     log.info('checking if {}/{} exists'.format(kwargs['bucket'], filename_remote))
-    service = get_service()
+    service = get_storage()
     req = service.objects().get(
         bucket=kwargs['bucket'],
         object=filename_remote)
@@ -45,7 +37,7 @@ def check_exists(filename_remote, **kwargs):
 
 
 def pull(filename_remote, **kwargs):
-    service = get_service()
+    service = get_storage()
     req = service.objects().get(
         object=filename_remote,
         bucket=kwargs['bucket'])
